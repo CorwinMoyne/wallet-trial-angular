@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --ssl true --ssl-cert \"ssl/server.crt\" --ssl-key \"ssl/server.key\"",
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",
@@ -19,6 +19,9 @@
     "@angular/platform-browser": "~9.1.1",
     "@angular/platform-browser-dynamic": "~9.1.1",
     "@angular/router": "~9.1.1",
+    "@funfair-tech/wallet-angular": "^1.0.1",
+    "@funfair-tech/wallet-sdk": "^2.2.0",
+    "post-robot": "^9.0.36",
     "rxjs": "~6.5.4",
     "tslib": "^1.10.0",
     "zone.js": "~0.10.2"
