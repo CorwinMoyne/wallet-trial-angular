@@ -14,6 +14,7 @@
           <button (click)="login()">Login</button>
         </div>
         <div class="logged-in" *ngIf="isAuthenticationCompleted$ | async">
+          <button (click)="kycModalOpen()">Start KYC</button>
           <button (click)="logout()">Logout</button>
         </div>
 

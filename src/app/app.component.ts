@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import {
   AuthenticationCompletedResponse,
+  IsKycVerifiedResponse,
+  KycProcessCancelledResponse,
   MessageListeners,
   RestoreAuthenticationCompletedResponse,
   WalletDeviceDeletedLoggedOutResponse,
@@ -24,11 +26,11 @@ import { StoreService } from './store.service';
 export class AppComponent {
   public restoreAuthenticationTaskCompleted$: Observable<
     boolean
-  > = StoreService.restoreAuthenticationTaskCompleted.pipe();
+  > = StoreService.restoreAuthenticationTaskCompleted$.pipe();
 
   public isAuthenticationCompleted$: Observable<
     boolean
-  > = StoreService.isAuthenticationCompleted.pipe();
+  > = StoreService.isAuthenticationCompleted$.pipe();
 
   constructor() {}
 
@@ -38,7 +40,7 @@ export class AppComponent {
       MessageListeners.authenticationCompleted,
       (result: AuthenticationCompletedResponse) => {
         if (result.origin === 'https://wallet.funfair.io') {
-          StoreService.isAuthenticated$.next(true);
+          StoreService.isAuthenticationCompleted$.next(true);
         }
       }
     );
@@ -48,7 +50,7 @@ export class AppComponent {
       MessageListeners.restoreAuthenticationCompleted,
       (result: RestoreAuthenticationCompletedResponse) => {
         if (result.origin === 'https://wallet.funfair.io') {
-          StoreService.restoreAuthenticationTaskCompleted.next(true);
+          StoreService.restoreAuthenticationTaskCompleted$.next(true);
         }
       }
     );
@@ -59,7 +61,7 @@ export class AppComponent {
       MessageListeners.walletInactivityLoggedOut,
       (result: WalletInactivityLoggedOutResponse) => {
         if (result.origin === 'https://wallet.funfair.io') {
-          StoreService.isAuthenticated$.next(false);
+          StoreService.isAuthenticationCompleted$.next(false);
         }
       }
     );
@@ -70,7 +72,40 @@ export class AppComponent {
       MessageListeners.walletDeviceDeletedLoggedOut,
       (result: WalletDeviceDeletedLoggedOutResponse) => {
         if (result.origin === 'https://wallet.funfair.io') {
-          StoreService.isAuthenticated$.next(false);
+          StoreService.isAuthenticationCompleted$.next(false);
+        }
+      }
+    );
+
+    window.funwallet.sdk.on<IsKycVerifiedResponse>(
+      MessageListeners.isKycVerified,
+      (result: IsKycVerifiedResponse) => {
+        if (result.origin === 'https://wallet.funfair.io') {
+          if (!result.data.isVerified) {
+            window.funwallet.sdk.showFunWalletModal();
+          } else {
+            // maybe show some kind of error message as in theory
+            // your client should not be showing ability to popup KYC
+            // when they are already verified
+            console.error(
+              'Your client should not show the kyc logic if already kyced'
+            );
+          }
+        }
+      }
+    );
+
+    // https://funfair-tech.github.io/fun-wallet-docs/guide/web-sdk/sdk-event-listeners.html#kycprocesscancelled
+    window.funwallet.sdk.on<KycProcessCancelledResponse>(
+      MessageListeners.kycProcessCancelled,
+      (result: KycProcessCancelledResponse) => {
+        if (result.origin === 'https://wallet.funfair.io') {
+          if (result.data.cancelled) {
+            // MUST CALL
+            window.funwallet.sdk.hideFunWalletModal();
+            // you may want to move routes etc here hence why you hook onto this action
+            // and the sdk does not
+          }
         }
       }
     );
@@ -91,6 +126,10 @@ export class AppComponent {
    */
   public async logout(): Promise<void> {
     await window.funwallet.sdk.logout();
-    StoreService.isAuthenticationCompleted.next(false);
+    StoreService.isAuthenticationCompleted$.next(false);
+  }
+
+  public async kycModalOpen(): Promise<void> {
+    await window.funwallet.sdk.kycModalOpen();
   }
 }
